@@ -1,10 +1,10 @@
 all: compile link execute
 
 compile:
-	g++ tp1.cpp -c
+	g++ nestbound.cpp -c
 
 link:
-	g++ tp1.o -o tp1 -lGL -lGLU -lglut -lSOIL 
+	g++ nestbound.o -o nestbound -lGL -lGLU -lglut -lSOIL 
 
 execute:
-	./tp1
+	./nestbound
