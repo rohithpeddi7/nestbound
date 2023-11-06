@@ -547,6 +547,28 @@ void keyUp(unsigned char key, int x, int y) {
     keys['w'] = false;
 }
 
+void SpecialKeys(int key, int x, int y)
+{
+   if (key == GLUT_KEY_UP)
+       keys['w'] = true;
+   else if (key == GLUT_KEY_RIGHT)
+       keys['d'] = true, bird.angle -= 8;
+   else if (key == GLUT_KEY_LEFT)
+       keys['a'] = true, bird.angle += 8;
+   glutPostRedisplay();
+}
+
+void SpecialKeysUp(int key, int x, int y)
+{
+   if (key == GLUT_KEY_UP)
+	   keys['w'] = false;
+   else if (key == GLUT_KEY_RIGHT)
+	   keys['d'] = false;
+   else if (key == GLUT_KEY_LEFT)
+	   keys['a'] = false;
+   glutPostRedisplay();
+}
+
 void press(unsigned char key, int x, int y) {
   switch (key) {
     // ESC key
@@ -623,6 +645,8 @@ int main(int argc, char **argv){
   glutDisplayFunc(renderScene);
   glutReshapeFunc(reshape);
   glutKeyboardFunc(press);
+  glutSpecialFunc(SpecialKeys);
+  glutSpecialUpFunc(SpecialKeysUp);
   glutKeyboardUpFunc(keyUp);
   // Register functions for timers, gravity, and ground checking
   glutTimerFunc(25, update, 0);
