@@ -1,12 +1,12 @@
-#include <GL/glew.h>
 #include <GL/freeglut.h>
 #include <GL/gl.h>
 #include <bits/stdc++.h>
+#include <SOIL/SOIL.h>
 using namespace std;
 
 #include "nestbound.h"
 
-//g++ tp1.cpp -o tp1 -lGL -lGLU -lglut -lSOIL -lsfml-audio
+//g++ nestbound.cpp -o nestbound -lGL -lGLU -lglut -lSOIL
 
 //Generates a random integer except 0
 float randomNumber(int range, int min){
@@ -103,7 +103,7 @@ void resetScene(int lives, int level) {
   setObject(&bird, randomNumber(1400, 50), randomNumber(600, 300), BIRD_WIDTH, BIRD_HEIGHT, lives, level, GRAVITY_ACCELERATION, birdTexture, 8, 2);
   setObject(&platform, randomNumber(1400, 50), PLATFORM_SPAWN_Y, PLATFORM_WIDTH, PLATFORM_HEIGHT, 0, 0, 0, platformTexture, 12, 3);
   setObject(&line, 1560, 716, LINE_WIDTH, LINE_HEIGHT, 0, 0, 0, lineTexture, 1, 1);
-  for (int j = 0; j < CLOUD_QUANTITY; j++) {
+  for (int j = 0; j < NUMBER_OF_CLOUDS; j++) {
     setObject(&clouds[j], randomNumber(300, -200 + j * 300), randomNumber(400, 550), CLOUD_WIDTH, CLOUD_HEIGHT, 0, 0, 0, cloudTexture, 1, 1);
     cloudSpeed[j] = 2 + j * 0.25;
   }
@@ -145,7 +145,7 @@ void drawPlatform(){
 
 // Draw the clouds moving across the sky
 void drawClouds(){
-  for (int j = 0; j < CLOUD_QUANTITY; j++) {
+  for (int j = 0; j < NUMBER_OF_CLOUDS; j++) {
     // If the cloud moves off the screen, change its movement direction
     if (clouds[j].position.x > WINDOW_WIDTH) {
       clouds[j].position.x = -CLOUD_WIDTH;
@@ -196,7 +196,6 @@ int scorePerTime() {
 void checkCollisionGround() {
   if (bird.position.y - (bird.width / 2) < ground.position.y + ground.height) {
     bird.lives--;
-    screamFrameCounter = 0;
     if (bird.lives == 0) {
       loseFrameCounter = 0;
       score = score + 10 * (line.position.x - 1380) + scorePerTime();
@@ -299,24 +298,24 @@ void energy(OBJECT *obj) {
   }
 }
 
-// Print function to be called by the HUD
-void print(int x, int y, int z, char *string){
+// Print function to be called by the display
+void print(int x, int y, int z, char *string, float r = 0, float g = 0, float b = 0, void* bitmapFont = GLUT_BITMAP_9_BY_15){
   // Set the text color to black
-  glColor3f(0, 0, 0);
+  glColor3f(r, g, b);
   // Set the text position using the provided coordinates
   glRasterPos2f(x, y);
   // Get the length of the string to be displayed
   int len = (int) strlen(string);
   // Loop through to write character by character
   for (int i = 0; i < len; i++){
-      glutBitmapCharacter(GLUT_BITMAP_9_BY_15, string[i]);
+      glutBitmapCharacter(bitmapFont, string[i]);
   }
   // Set the text color back to white
   glColor3f(1, 1, 1);
 }
 
 // Print on the screen, call the print function
-void hud(){
+void display(){
   char buffer[50];
   int n;
   char *A;
@@ -357,23 +356,21 @@ void hud(){
   A = (char *)buffer;
   print(50, 760, 2, A);
 
-  if (bird.lives == 1) {
+  if (bird.lives >= 1) {
     designObject(life, lifeTexture);
   }
 
-  if (bird.lives == 2) {
-    designObject(life, lifeTexture);
+  if (bird.lives >= 2) {
     designObject(life2, lifeTexture);
   }
 
   if (bird.lives == 3) {
-    designObject(life, lifeTexture);
-    designObject(life2, lifeTexture);
     designObject(life3, lifeTexture);
   }
 }
 
 void renderScene(void) {
+  // Clearing the buffer (screen)
   glClear(GL_COLOR_BUFFER_BIT);
   switch (current_screen) {
     case INTRO:
@@ -403,7 +400,7 @@ void renderScene(void) {
           drawStar();
         }
       }
-      hud();
+      display();
       break;
     case LOST:
       designObject(image, loseTexture);
@@ -411,20 +408,21 @@ void renderScene(void) {
       int n;
       char *A;
       {
-        n = sprintf(buffer, "Score: %.d", score);
+        n = sprintf(buffer, "%.d", score);
         A = (char*)buffer;
         glColor3f(1, 1, 1);
-        print(500, 490, 2, A);
+        print(840, 490, 2, A, 1, 1, 1, GLUT_BITMAP_TIMES_ROMAN_24);
       }
       {
         n = sprintf(buffer, "Level %.d", bird.level);
         A = (char*)buffer;
         glColor3f(1, 1, 1);
-        print(500, 465, 2, A);
+        print(830, 465, 2, A, 1, 1, 1, GLUT_BITMAP_HELVETICA_18);
       }
       break;
   }
-  glFlush();
+  // Swapping the buffers (screen)
+  glutSwapBuffers();
 }
 
 void update(int idx) {
@@ -458,7 +456,7 @@ void update(int idx) {
     case GAME:
       gameFrameCounter = 0;
       menuFrameCounter = 0;
-      hud();
+      display();
       checkCollisionPlatform();
       checkCollisionGround();
       if (keys['w']) {
@@ -541,10 +539,10 @@ void reshape(int w, int h){
 }
 
 void keyUp(unsigned char key, int x, int y) {
+  if (key>='A'&&key<='Z') // uppercase
+    key = key-'A'+'a'; // lowercase
+
   keys[key] = false; // Sets the state of the current key to not pressed
-  // For some reason, when the Caps Lock was activated and the uppercase W was pressed, the lowercase w remained as true
-  if (key == 'W')
-    keys['w'] = false;
 }
 
 void SpecialKeys(int key, int x, int y)
@@ -633,25 +631,32 @@ int main(int argc, char **argv){
   glutInitContextProfile(GLUT_COMPATIBILITY_PROFILE);
 
   // Initial configuration of the GLUT window
-  glutInitDisplayMode(GLUT_SINGLE | GLUT_RGBA);
+  // We have taken double buffer so that animations are smooth
+  glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
+  // Set the window size
   glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
+  // Set the window position
   glutInitWindowPosition(100, 100);
-
-  // Open the window
+  // Open the window with the name "NESTBOUND GAME"
   glutCreateWindow("NESTBOUND GAME");
-  // Initialization
+  // Initialization function
   initialize();
-  // Register callbacks for certain events
+  // Register callbacks
+  // The main display function called each time
   glutDisplayFunc(renderScene);
+  // The reshape function called each time the window is resized
   glutReshapeFunc(reshape);
+  // The function called when a key is pressed
   glutKeyboardFunc(press);
-  glutSpecialFunc(SpecialKeys);
-  glutSpecialUpFunc(SpecialKeysUp);
+  // The function called when a key is released
   glutKeyboardUpFunc(keyUp);
-  // Register functions for timers, gravity, and ground checking
+  // The function called when a special key(arrow keys) is pressed
+  glutSpecialFunc(SpecialKeys);
+  // The function called when a special key(arrow keys) is released
+  glutSpecialUpFunc(SpecialKeysUp);
+  // This is the main function
   glutTimerFunc(25, update, 0);
-
-  // Enter a loop and never exit
+  // Enter the main glut loop.
   glutMainLoop();
   return 0;
 }

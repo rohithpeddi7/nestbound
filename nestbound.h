@@ -1,5 +1,3 @@
-#include <SOIL/SOIL.h>
-
 bool keys[256];
 
 // Window
@@ -53,8 +51,8 @@ bool explosion = false;
 // Clouds
 const int CLOUD_WIDTH = 250;
 const int CLOUD_HEIGHT = 141;
-const int CLOUD_QUANTITY = 6;
-float cloudSpeed[CLOUD_QUANTITY];
+const int NUMBER_OF_CLOUDS = 6;
+float cloudSpeed[NUMBER_OF_CLOUDS];
 
 // Constants and variables for movements
 const float GRAVITY_ACCELERATION = -0.0005;
@@ -148,7 +146,7 @@ OBJECT line;
 OBJECT ground;
 OBJECT background;
 OBJECT smoke;
-OBJECT clouds[CLOUD_QUANTITY];
+OBJECT clouds[NUMBER_OF_CLOUDS];
 OBJECT image;
 OBJECT life, life2, life3;
 OBJECT star;
